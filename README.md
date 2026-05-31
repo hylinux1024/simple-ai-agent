@@ -2,6 +2,11 @@
 
 一个模块化、可扩展的 AI Agent 框架，支持多种 Agent 模式。
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
+**GitHub**: [github.com/hylinux1024/simple-ai-agent](https://github.com/hylinux1024/simple-ai-agent)
+
 ## 特性
 
 - **统一 LLM 抽象层**：支持 OpenAI、DeepSeek、Anthropic 等厂商 API
