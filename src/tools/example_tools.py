@@ -2,9 +2,9 @@
 示例工具定义 - Mock 接口
 用于演示和测试 Agent 框架的工具调用功能
 """
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List
 
-from ..models import UnifiedTool
+from .base import Tool, ToolParameter
 
 
 # =====================================================================
@@ -18,18 +18,35 @@ def local_weather_api(city: str) -> str:
     return "目标行政区气象数据缺损"
 
 
-class WeatherSchema(BaseModel):
-    city: str = Field(..., description="目标查询城市中文名称")
+class WeatherTool(Tool):
+    """天气查询工具"""
+
+    def __init__(self):
+        super().__init__(
+            name="get_weather",
+            description="实时检索中国气象局底层数据库获取最新城市天气状况"
+        )
+
+    def run(self, parameters: Dict[str, Any]) -> str:
+        """执行天气查询"""
+        city = parameters.get("city", "")
+        return local_weather_api(city)
+
+    def get_parameters(self) -> List[ToolParameter]:
+        """获取参数定义"""
+        return [
+            ToolParameter(
+                name="city",
+                type="string",
+                description="目标查询城市中文名称",
+                required=True
+            )
+        ]
 
 
-def get_weather_tool() -> UnifiedTool:
+def get_weather_tool() -> WeatherTool:
     """获取天气查询工具"""
-    return UnifiedTool(
-        name="get_weather",
-        description="实时检索中国气象局底层数据库获取最新城市天气状况",
-        parameters=WeatherSchema,
-        executable=local_weather_api,
-    )
+    return WeatherTool()
 
 
 # =====================================================================
@@ -43,20 +60,34 @@ def book_flight(origin: str, destination: str, date: str) -> str:
     return "【预订失败】航线暂未支持"
 
 
-class FlightSchema(BaseModel):
-    origin: str = Field(..., description="出发城市")
-    destination: str = Field(..., description="目的城市")
-    date: str = Field(..., description="出发日期，格式 YYYY-MM-DD")
+class FlightTool(Tool):
+    """机票预订工具"""
+
+    def __init__(self):
+        super().__init__(
+            name="book_flight",
+            description="预订国内航班机票"
+        )
+
+    def run(self, parameters: Dict[str, Any]) -> str:
+        """执行机票预订"""
+        origin = parameters.get("origin", "")
+        destination = parameters.get("destination", "")
+        date = parameters.get("date", "")
+        return book_flight(origin, destination, date)
+
+    def get_parameters(self) -> List[ToolParameter]:
+        """获取参数定义"""
+        return [
+            ToolParameter(name="origin", type="string", description="出发城市", required=True),
+            ToolParameter(name="destination", type="string", description="目的城市", required=True),
+            ToolParameter(name="date", type="string", description="出发日期，格式 YYYY-MM-DD", required=True),
+        ]
 
 
-def get_flight_tool() -> UnifiedTool:
+def get_flight_tool() -> FlightTool:
     """获取机票预订工具"""
-    return UnifiedTool(
-        name="book_flight",
-        description="预订国内航班机票",
-        parameters=FlightSchema,
-        executable=book_flight,
-    )
+    return FlightTool()
 
 
 # =====================================================================
@@ -70,21 +101,36 @@ def book_hotel(city: str, area: str, date: str, room_type: str = "高级大床�
     return "【预订失败】目标区域酒店暂未支持"
 
 
-class HotelSchema(BaseModel):
-    city: str = Field(..., description="入住城市")
-    area: str = Field(..., description="区域/商圈")
-    date: str = Field(..., description="入住日期，格式 YYYY-MM-DD")
-    room_type: str = Field(default="高级大床房", description="房型")
+class HotelTool(Tool):
+    """酒店预订工具"""
+
+    def __init__(self):
+        super().__init__(
+            name="book_hotel",
+            description="预订酒店客房"
+        )
+
+    def run(self, parameters: Dict[str, Any]) -> str:
+        """执行酒店预订"""
+        city = parameters.get("city", "")
+        area = parameters.get("area", "")
+        date = parameters.get("date", "")
+        room_type = parameters.get("room_type", "高级大床房")
+        return book_hotel(city, area, date, room_type)
+
+    def get_parameters(self) -> List[ToolParameter]:
+        """获取参数定义"""
+        return [
+            ToolParameter(name="city", type="string", description="入住城市", required=True),
+            ToolParameter(name="area", type="string", description="区域/商圈", required=True),
+            ToolParameter(name="date", type="string", description="入住日期，格式 YYYY-MM-DD", required=True),
+            ToolParameter(name="room_type", type="string", description="房型", required=False, default="高级大床房"),
+        ]
 
 
-def get_hotel_tool() -> UnifiedTool:
+def get_hotel_tool() -> HotelTool:
     """获取酒店预订工具"""
-    return UnifiedTool(
-        name="book_hotel",
-        description="预订酒店客房",
-        parameters=HotelSchema,
-        executable=book_hotel,
-    )
+    return HotelTool()
 
 
 # =====================================================================
@@ -98,27 +144,41 @@ def book_car_rental(city: str, pickup_location: str, date: str) -> str:
     return "【预订失败】目标城市租车服务暂未支持"
 
 
-class CarRentalSchema(BaseModel):
-    city: str = Field(..., description="取车城市")
-    pickup_location: str = Field(..., description="具体取车地点")
-    date: str = Field(..., description="取车日期，格式 YYYY-MM-DD")
+class CarRentalTool(Tool):
+    """租车服务工具"""
+
+    def __init__(self):
+        super().__init__(
+            name="book_car_rental",
+            description="预订租车服务（含司机可选）"
+        )
+
+    def run(self, parameters: Dict[str, Any]) -> str:
+        """执行租车预订"""
+        city = parameters.get("city", "")
+        pickup_location = parameters.get("pickup_location", "")
+        date = parameters.get("date", "")
+        return book_car_rental(city, pickup_location, date)
+
+    def get_parameters(self) -> List[ToolParameter]:
+        """获取参数定义"""
+        return [
+            ToolParameter(name="city", type="string", description="取车城市", required=True),
+            ToolParameter(name="pickup_location", type="string", description="具体取车地点", required=True),
+            ToolParameter(name="date", type="string", description="取车日期，格式 YYYY-MM-DD", required=True),
+        ]
 
 
-def get_car_rental_tool() -> UnifiedTool:
+def get_car_rental_tool() -> CarRentalTool:
     """获取租车服务工具"""
-    return UnifiedTool(
-        name="book_car_rental",
-        description="预订租车服务（含司机可选）",
-        parameters=CarRentalSchema,
-        executable=book_car_rental,
-    )
+    return CarRentalTool()
 
 
 # =====================================================================
 # 工具集合
 # =====================================================================
 
-def get_all_tools() -> list[UnifiedTool]:
+def get_all_tools() -> list[Tool]:
     """获取所有示例工具"""
     return [
         get_weather_tool(),

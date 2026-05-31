@@ -6,7 +6,7 @@ import json
 import asyncio
 from typing import List, Optional, Any
 
-from ..models import BaseMessage, Role, ToolCall, UnifiedTool
+from ..models import BaseMessage, Role, ToolCall
 from .base import BaseLLM
 from .schema_converter import ToolSchemaConverter
 

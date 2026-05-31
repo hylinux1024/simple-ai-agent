@@ -2,9 +2,8 @@
 Reflection Agent - 基于对抗性自我纠偏的自愈博弈
 """
 import logging
-from typing import List
 
-from ..models import BaseMessage, Role, UnifiedTool
+from ..models import BaseMessage, Role
 from ..llm import BaseLLM
 from .base import BaseAgent
 

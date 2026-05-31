@@ -14,18 +14,22 @@
   - ReAct（Reasoning + Acting）
   - Plan-and-Solve（谋定而后动）
   - Reflection（自我纠偏）
-- **环境变量配置**：敏感信息与代码分离
 - **模块化设计**：清晰的目录结构，易于扩展
+- **抽象工具系统**：
+  - `Tool` 基类：统一定义工具接口
+  - `ToolParameter`：声明式参数定义
+  - `ToolRegistry`：单例注册表，支持函数和类两种注册方式
+- **环境变量配置**：敏感信息与代码分离
 
 ## 项目结构
 
 ```
 simple-ai-agent/
 ├── src/
-│   ├── models/          # 数据模型 (Role, ToolCall, BaseMessage, UnifiedTool)
+│   ├── models/          # 数据模型 (Role, ToolCall, BaseMessage)
 │   ├── llm/             # LLM 适配器 (BaseLLM, OpenAIAdapter, MockLLM, Factory)
 │   ├── agents/          # Agent 实现 (ReAct, PlanAndSolve, Reflection)
-│   ├── tools/           # 工具定义和 Schema 转换
+│   ├── tools/           # 工具系统 (Tool 基类，ToolParameter, ToolRegistry)
 │   ├── utils/           # 工具函数 (配置加载)
 │   └── __init__.py      # 模块导出
 ├── main.py              # 主入口
@@ -96,22 +100,87 @@ LLM_BASE_URL=
 
 ## 使用示例
 
+### 定义自定义工具
+
+```python
+from src.tools import Tool, ToolParameter
+from typing import Any, Dict, List
+
+class WeatherTool(Tool):
+    """天气查询工具"""
+
+    def __init__(self):
+        super().__init__(
+            name="get_weather",
+            description="查询城市天气"
+        )
+
+    def run(self, parameters: Dict[str, Any]) -> str:
+        city = parameters.get("city", "")
+        return f"{city} 晴天，25°C"
+
+    def get_parameters(self) -> List[ToolParameter]:
+        return [
+            ToolParameter(
+                name="city",
+                type="string",
+                description="城市名称",
+                required=True
+            )
+        ]
+
+# 使用工具
+weather = WeatherTool()
+result = weather.run({"city": "北京"})
+print(result)  # 北京 晴天，25°C
+```
+
+### 使用工具注册表
+
+```python
+from src.tools import registry, Tool, ToolParameter
+
+# 方式 1: 注册函数
+def hello(name: str) -> str:
+    return f"Hello, {name}!"
+
+registry.register_function(
+    name="hello",
+    description="打招呼",
+    func=hello
+)
+
+# 方式 2: 注册 Tool 类
+class GreetTool(Tool):
+    def __init__(self):
+        super().__init__("greet", "问候工具")
+    
+    def run(self, parameters): ...
+    def get_parameters(self): ...
+
+registry.register_tool(GreetTool())
+
+# 获取所有工具
+tools = registry.get_all_tools()
+```
+
 ### ReAct Agent
 
 ```python
-from src import ReActAgent, LLMFactory, UnifiedTool, config
+from src import ReActAgent, LLMFactory
+from src.tools import get_weather_tool
 
 llm = LLMFactory.create(
-    provider=config.provider,
-    model_name=config.model_name,
-    api_key=config.api_key,
+    provider="openai",
+    model_name="gpt-4",
+    api_key="your-api-key",
 )
 
 agent = ReActAgent(
     name="assistant",
     system_prompt="你是一个有用的助手。",
     llm=llm,
-    tools=[my_tool]
+    tools=[get_weather_tool()]
 )
 
 result = await agent.run("查询北京天气")
@@ -120,7 +189,9 @@ result = await agent.run("查询北京天气")
 ### Plan-and-Solve Agent
 
 ```python
-from src import PlanAndSolveAgent
+from src import PlanAndSolveAgent, LLMFactory
+
+llm = LLMFactory.create(provider="openai", model_name="gpt-4", api_key="your-key")
 
 agent = PlanAndSolveAgent(
     name="planner",
@@ -134,7 +205,9 @@ result = await agent.run("计划一次商务旅行")
 ### Reflection Agent
 
 ```python
-from src import ReflectionAgent
+from src import ReflectionAgent, LLMFactory
+
+llm = LLMFactory.create(provider="openai", model_name="gpt-4", api_key="your-key")
 
 agent = ReflectionAgent(
     name="writer",

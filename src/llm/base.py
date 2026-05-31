@@ -4,7 +4,8 @@ LLM 硬件抽象层（HAL）核心基类
 from abc import ABC, abstractmethod
 from typing import List, Optional, Any
 
-from ..models import BaseMessage, UnifiedTool
+from ..models import BaseMessage
+from ..tools.base import Tool
 
 
 class BaseLLM(ABC):
@@ -15,9 +16,9 @@ class BaseLLM(ABC):
         self.api_key = api_key
         self.base_url = base_url
         self.kwargs = kwargs
-        self.bound_tools: List[UnifiedTool] = []
+        self.bound_tools: List[Tool] = []
 
-    def bind_tools(self, tools: List[UnifiedTool]) -> 'BaseLLM':
+    def bind_tools(self, tools: List[Tool]) -> 'BaseLLM':
         """将一组原子工具动态注入/绑定至当前大模型底座"""
         self.bound_tools = tools
         return self

@@ -3,9 +3,9 @@
 框架内所有模块流通的标准数据载体
 """
 from enum import Enum
-from typing import List, Optional, Any, Dict, Type, Callable
+from typing import List, Optional, Any, Dict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class Role(Enum):
@@ -30,14 +30,3 @@ class BaseMessage(BaseModel):
     name: Optional[str] = None
     tool_calls: Optional[List[ToolCall]] = None
     tool_call_id: Optional[str] = None
-
-
-class UnifiedTool(BaseModel):
-    """跨模型标准工具抽象定义"""
-    name: str
-    description: str
-    parameters: Type[BaseModel]
-    executable: Optional[Callable] = None
-
-    class Config:
-        arbitrary_types_allowed = True

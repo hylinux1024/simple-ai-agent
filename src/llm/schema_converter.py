@@ -2,29 +2,43 @@
 Schema 转换器 - 抹平不同 LLM 厂商在 Tool Calling 协议上的标准差异
 """
 import json
-from typing import Any, Dict, Type
+from typing import Any, Dict
 
-from pydantic import BaseModel
-
-from ..models import UnifiedTool
+from ..tools.base import Tool, ToolParameter
 
 
 class ToolSchemaConverter:
     """多态 JSON Schema 转换引擎"""
 
     @staticmethod
-    def _base_pydantic_to_schema(pydantic_model: Type[BaseModel]) -> Dict[str, Any]:
-        """提取标准的 JSON Schema"""
-        return pydantic_model.model_json_schema()
+    def _tool_parameters_to_schema(parameters: list[ToolParameter]) -> Dict[str, Any]:
+        """从 ToolParameter 列表生成 JSON Schema"""
+        properties = {}
+        required = []
+
+        for p in parameters:
+            properties[p.name] = {
+                "type": p.type,
+                "description": p.description
+            }
+            if p.default is not None:
+                properties[p.name]["default"] = p.default
+            if p.required:
+                required.append(p.name)
+
+        return {
+            "type": "object",
+            "properties": properties,
+            "required": required
+        }
 
     @classmethod
-    def to_openai(cls, tool: UnifiedTool, strict: bool = False) -> Dict[str, Any]:
+    def to_openai(cls, tool: Tool, strict: bool = False) -> Dict[str, Any]:
         """转换为 OpenAI/DeepSeek 兼容的高级工具规约格式"""
-        schema = cls._base_pydantic_to_schema(tool.parameters)
+        schema = cls._tool_parameters_to_schema(tool.get_parameters())
         if strict:
             schema["additionalProperties"] = False
-            if "properties" in schema:
-                schema["required"] = list(schema["properties"].keys())
+            schema["required"] = list(schema["properties"].keys())
         return {
             "type": "function",
             "function": {
@@ -35,9 +49,9 @@ class ToolSchemaConverter:
         }
 
     @classmethod
-    def to_anthropic(cls, tool: UnifiedTool) -> Dict[str, Any]:
+    def to_anthropic(cls, tool: Tool) -> Dict[str, Any]:
         """转换为 Anthropic Claude 厂商标准的专属架构格式"""
-        schema = cls._base_pydantic_to_schema(tool.parameters)
+        schema = cls._tool_parameters_to_schema(tool.get_parameters())
         return {
             "name": tool.name,
             "description": tool.description,

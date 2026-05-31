@@ -7,9 +7,10 @@ import logging
 import re
 from typing import List
 
-from ..models import BaseMessage, Role, UnifiedTool, ToolCall
+from ..models import BaseMessage, Role, ToolCall
 from ..llm import BaseLLM
 from .base import BaseAgent
+from ..tools.base import Tool
 
 
 def extract_json_from_response(content: str) -> dict:
@@ -94,12 +95,9 @@ class PlanAndSolveAgent(BaseAgent):
                     logging.info(f"🛠️ Action: 准备执行 [{tc.name}], 参数：{tc.arguments}")
                     tool = next((t for t in self.tools if t.name == tc.name), None)
 
-                    if tool and tool.executable:
+                    if tool:
                         try:
-                            if asyncio.iscoroutinefunction(tool.executable):
-                                observation = await tool.executable(**tc.arguments)
-                            else:
-                                observation = tool.executable(**tc.arguments)
+                            observation = tool.run(tc.arguments)
                         except Exception as e:
                             observation = f"Execution Error: {str(e)}"
                     else:
